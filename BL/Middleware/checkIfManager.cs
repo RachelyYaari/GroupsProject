@@ -72,34 +72,29 @@ namespace BL.Middleware
                     }
                 }
 
-                if (context.Request.Path.StartsWithSegments("/Group"))
+                else if(context.Request.Path.StartsWithSegments("/Group"))
                 {
 
                     // המידלוור צריך להיות ממוקם לאחר UseRouting()
 
-                    if (routeData.Values.TryGetValue("eventId", out var eventIdValue) && int.TryParse(eventIdValue.ToString(), out int eventId))
+                    if (routeData.Values.TryGetValue("groupId", out var groupIdValue) && int.TryParse(groupIdValue.ToString(), out int groupId))
                     {
-                        // חילוץ ה-UserId מה-JWT
-                        int userId = GetUserIdFromJwt(context);
 
                         if (userId > 0)
                         {
                             using (var scope = _scopeFactory.CreateScope())
                             {
-                                var _event = scope.ServiceProvider.GetRequiredService<IEvent>();
+                                var _group = scope.ServiceProvider.GetRequiredService<IGroup>();
 
-                                // קבלת פרטי האירוע מהשירות
-                                var eventDetails = await _event.getEventById(eventId);
+                                var groupDetails = await _group.getGroupById(groupId);
 
-                                if (eventDetails != null && eventDetails.Owner == userId)
+                                if (groupDetails != null && groupDetails.Manager == userId)
                                 {
-                                    // המשתמש הוא הבעלים של האירוע, המשך לבקשה הבאה בצנרת
                                     await _next(context);
                                     return;
                                 }
                                 else
                                 {
-                                    // אם המשתמש לא מזוהה או לא הבעלים של האירוע
                                     context.Response.StatusCode = StatusCodes.Status403Forbidden;
                                     await context.Response.WriteAsync("You are not authorized to delete this event.");
                                     return;
