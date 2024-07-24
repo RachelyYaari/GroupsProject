@@ -42,8 +42,6 @@ namespace BL.Middleware
                 {
                     if (routeData.Values.TryGetValue("eventId", out var eventIdValue) && int.TryParse(eventIdValue.ToString(), out int eventId))
                     {
-                        // חילוץ ה-UserId מה-JWT
-
                         if (userId > 0)
                         {
                             using (var scope = _scopeFactory.CreateScope())
@@ -72,7 +70,7 @@ namespace BL.Middleware
                     }
                 }
 
-                else if(context.Request.Path.StartsWithSegments("/Group"))
+                else if (context.Request.Path.StartsWithSegments("/Group"))
                 {
 
                     // המידלוור צריך להיות ממוקם לאחר UseRouting()
@@ -104,12 +102,32 @@ namespace BL.Middleware
 
                     }
                 }
+                else if (context.Request.Path.StartsWithSegments("/User"))
+                {
+                    if (routeData.Values.TryGetValue("userId", out var userIdValue) && int.TryParse(userIdValue.ToString(), out int userIdtoDelete))
+                    {
 
+                        if (userId > 0)
+                        {
+
+                            if (userIdtoDelete == userId)
+                            {
+                                await _next(context);
+                                return;
+                            }
+                            else
+                            {
+                                context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                                await context.Response.WriteAsync("You are not authorized to delete this event.");
+                                return;
+                            }
+                        }
+                    }
+
+                }
             }
-            await _next(context);
-            return;
-        }
 
+        }
         private int GetUserIdFromJwt(HttpContext context)
         {
             var jwt = context.Request.Headers["Authorization"].FirstOrDefault()?.Split(" ").Last();
@@ -138,3 +156,4 @@ namespace BL.Middleware
         }
     }
 }
+
